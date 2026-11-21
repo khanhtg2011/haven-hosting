@@ -446,7 +446,7 @@ _setupNotifications() {
 
   mentionSound.addEventListener('change', () => {
     this.notifications.setSound('mention', mentionSound.value);
-    this.notifications.play('mention', { preview: true });
+    this.notifications.play('mention'); // Preview the selected sound
   });
 
   if (replyVolume) {
@@ -458,7 +458,7 @@ _setupNotifications() {
   if (replySound) {
     replySound.addEventListener('change', () => {
       this.notifications.setSound('reply', replySound.value);
-      this.notifications.play('reply', { preview: true });
+      this.notifications.play('reply');
     });
   }
 
@@ -471,7 +471,7 @@ _setupNotifications() {
   if (joinSound) {
     joinSound.addEventListener('change', () => {
       this.notifications.setSound('join', joinSound.value);
-      this.notifications.play('join', { preview: true });
+      this.notifications.play('join');
     });
   }
 
@@ -484,7 +484,7 @@ _setupNotifications() {
   if (leaveSound) {
     leaveSound.addEventListener('change', () => {
       this.notifications.setSound('leave', leaveSound.value);
-      this.notifications.play('leave', { preview: true });
+      this.notifications.play('leave');
     });
   }
 
@@ -532,12 +532,6 @@ _setupNotifications() {
     upArrowEditToggle.addEventListener('change', () => {
       localStorage.setItem('haven_up_arrow_edit', String(upArrowEditToggle.checked));
     });
-  }
-
-  const emoteWordsToggle = document.getElementById('emote-words-toggle');
-  if (emoteWordsToggle) {
-    emoteWordsToggle.checked = localStorage.getItem('haven-emote-words') === 'true';
-    emoteWordsToggle.addEventListener('change', () => localStorage.setItem('haven-emote-words', String(emoteWordsToggle.checked)));
   }
 
   // Profile card on hover (on by default). The hover handler reads the flag
@@ -1513,13 +1507,11 @@ _updateClock() {
  */
 _pingSend() {
   if (!this.socket || !this.socket.connected) return;
+  const now = Date.now();
   if (!this._pingQueue) this._pingQueue = [];
-  // If pongs stop coming back, don't accumulate: a stale head would later be
-  // paired with an unrelated pong and produce exactly the bogus reading this
-  // is meant to prevent.
   if (this._pingQueue.length >= 4) this._pingQueue.shift();
-  this._pingQueue.push(Date.now());
-  this.socket.emit('ping-check');
+  this._pingQueue.push(now);
+  this.socket.emit('ping-check', { t: now });
 },
 
 _startPingMonitor() {

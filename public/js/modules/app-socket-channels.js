@@ -129,7 +129,15 @@ _listenChannelsAndMessages() {
     if (this.currentChannel) {
       const curCh = this.channels.find(c => c.code === this.currentChannel);
       if (curCh) {
-        this._updateComposerVisibility?.(curCh);
+        const msgInputArea = document.getElementById('message-input-area');
+        const _textOff = curCh.text_enabled === 0;
+        const _mediaOff = curCh.media_enabled === 0;
+        // Per-channel, same reasoning as the composer gate in app-channels.js (#5468)
+        const _isReadOnly = curCh.read_only === 1 && !this.user?.isAdmin && !curCh.canOverrideReadOnly;
+        if (msgInputArea) msgInputArea.style.display = (_isReadOnly || (_textOff && _mediaOff)) ? 'none' : '';
+        if (msgInputArea) msgInputArea.classList.toggle('media-only', _textOff && !_mediaOff);
+        this._updateReadOnlyNote(curCh);
+        this._applyReactionLock?.();
       }
     }
 
@@ -582,13 +590,11 @@ _listenChannelsAndMessages() {
     const msgChannel = this.channels.find(c => c.code === data.channelCode);
     if (msgChannel && data.message.id > (msgChannel.latestMessageId || 0)) {
       msgChannel.latestMessageId = data.message.id;
-      // Re-sort sidebar if this channel's parent uses dynamic sort, or it
-      // is a DM and your DMs show the latest message first (app-dm-sort.js)
+      // Re-sort sidebar if this channel's parent uses dynamic sort
       const parent = msgChannel.parent_channel_id
         ? this.channels.find(c => c.id === msgChannel.parent_channel_id)
         : null;
-      if ((msgChannel.is_dm && this._dmSortMode() === 'recent') ||
-          (parent && parent.sort_alphabetical === 4) ||
+      if ((parent && parent.sort_alphabetical === 4) ||
           (!msgChannel.parent_channel_id && (localStorage.getItem('haven_server_sort_mode') === 'dynamic' ||
             (!localStorage.getItem('haven_server_sort_mode') && this.serverSettings?.channel_sort_mode === 'dynamic')))) {
         this._renderChannels();
@@ -884,18 +890,7 @@ _listenPresenceAndVoice() {
     // this is the only chance to put the row back where it was.
     this._revertPendingChannelToggle();
     this._restoreRefusedDraft(msg);
-    /^You are in a timeout/.test(msg) && (this._forumRestoreDraft?.(), this._showTimeoutNotice(msg));
     this._showToast(msg, 'error');
-  });
-
-  // Auto-mod refused what was just sent (a link or word the server does not
-  // allow): the text, or the forum post, comes back to fix and send again.
-  // The notice itself follows as an error-msg.
-  this.socket.on('automod-refused', (data) => {
-    const surface = data && data.surface;
-    if (surface !== 'message' && surface !== 'dm') return;
-    this._restoreRefusedDraft(null, true);
-    this._forumRestoreDraft?.();
   });
 
   // New accounts wait before posting (#5742). The server says how long is
@@ -915,13 +910,23 @@ _listenPresenceAndVoice() {
     if (data && data.message) this._showToast(data.message, data.type || 'info');
   });
 
-  this.socket.on('pong-check', () => {
-    // Pair with the oldest outstanding probe (see _pingSend). If the queue is
-    // empty this pong belongs to a probe sent before a reconnect, so ignore it
-    // rather than inventing a number.
-    const sentAt = this._pingQueue && this._pingQueue.shift();
+  this.socket.on('pong-check', (data) => {
+    let sentAt;
+    if (data && typeof data.t === 'number') {
+      sentAt = data.t;
+      if (this._pingQueue && this._pingQueue.length > 0) this._pingQueue.shift();
+    } else {
+      sentAt = this._pingQueue && this._pingQueue.shift();
+    }
     if (sentAt == null) return;
-    document.getElementById('status-ping').textContent = Date.now() - sentAt;
+    const rtt = Math.max(1, Date.now() - sentAt);
+    if (rtt > 3000 && this.socket?.connected) {
+      this._pingQueue = [];
+      setTimeout(() => this._pingSend?.(), 250);
+      return;
+    }
+    const el = document.getElementById('status-ping');
+    if (el) el.textContent = rtt;
   });
 },
 

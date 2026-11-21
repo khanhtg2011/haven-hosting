@@ -719,6 +719,12 @@ _uploadWithProgress(url, formData) {
       reject(err);
     });
 
+    xhr.timeout = 35000;
+    xhr.addEventListener('timeout', () => {
+      settle();
+      reject(new Error(t('toasts.upload_connection_failed') || 'Quá thời gian tải lên (Timeout)'));
+    });
+
     this._activeUploads.add(xhr);
     xhr.send(formData);
   });

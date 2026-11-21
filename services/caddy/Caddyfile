@@ -1,0 +1,12 @@
+haven.khanhs.io.vn {
+    encode zstd gzip
+
+    reverse_proxy https://127.0.0.1:3000 {
+        transport http {
+            tls_insecure_skip_verify
+            keepalive 60s
+            keepalive_idle_conns 256
+        }
+        flush_interval -1
+    }
+}
