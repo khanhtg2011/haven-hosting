@@ -18,9 +18,9 @@ const I18n = (() => {
   let _languageChangeBound = false;
 
   // Locales available: add entries here as you create new locale files
-  const SUPPORTED = ['en', 'fr', 'de', 'es', 'pl', 'ru', 'uk', 'zh', 'pt', 'fa', 'ja', 'ko'];
-  const DEFAULT   = 'en';
-  const FLAGS = { en: 'gb', fr: 'fr', de: 'de', es: 'es', pl: 'pl', ru: 'ru', uk: 'ua', zh: 'cn', pt: 'br', ja: 'jp', ko: 'kr' };
+  const SUPPORTED = ['vi', 'en', 'fr', 'de', 'es', 'pl', 'ru', 'uk', 'zh', 'pt', 'fa', 'ja', 'ko'];
+  const DEFAULT   = 'vi';
+  const FLAGS = { vi: 'vn', en: 'gb', fr: 'fr', de: 'de', es: 'es', pl: 'pl', ru: 'ru', uk: 'ua', zh: 'cn', pt: 'br', ja: 'jp', ko: 'kr' };
 
   function _browserLocale() {
     const languages = Array.isArray(navigator.languages) && navigator.languages.length
@@ -62,7 +62,7 @@ const I18n = (() => {
         }
       }
     } catch { /* offline / not ready, fall through to browser detection */ }
-    return _browserLocale();
+    return DEFAULT;
   }
 
   // A locale file that failed to load once (the server restarting for an
