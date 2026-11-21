@@ -1,0 +1,14 @@
+[Unit]
+Description=Haven Chat Server (High-Performance Rust Edition)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/haven-server
+ExecStart=/usr/local/bin/haven-server --port 3000 --host 127.0.0.1 --db /data/haven.db --public-dir /opt/haven-server/public
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

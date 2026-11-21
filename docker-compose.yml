@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  haven-server:
+    build: .
+    container_name: haven-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - HAVEN_DB_PATH=/data/haven.db
+      - JWT_SECRET=change_me_to_your_secure_random_jwt_secret
+    volumes:
+      - haven_data:/data
+
+volumes:
+  haven_data:
